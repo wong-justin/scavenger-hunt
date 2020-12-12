@@ -1,36 +1,76 @@
-const express = require('express')
-const app = express()
-const { execSync } = require('child_process')
-const bodyParser = require('body-parser')
-const path = require('path')
+// misc helpers
+const { execSync } = require('child_process');
+const bodyParser = require('body-parser');
+const path = require('path');
+// db
+const lowdb = require('lowdb');
+const FileSync = require('lowdb/adapters/FileSync');
+const db = lowdb(new FileSync('.data/db.json'));  // db location
+// express
+const express = require('express');
+const app = express();
+app.use(express.static('public'));
+app.use(bodyParser.json());        // to read POST deploy from github
 
-app.use(bodyParser.json())
-
+// routing
 app.get('/', (request, response) => {
-  response.sendFile(path.join(__dirname, 'README.md'))
-})
+  response.sendFile(path.join(__dirname, '/views/index.html'));
+});
 
-app.post('/deploy', (request, response) => {
-  if (request.query.secret !== process.env.SECRET) {
-    response.status(401).send()
+// testing db
+
+let defaults = {
+  users: [
+    {"firstName":"John", "lastName":"Hancock"},
+    {"firstName":"Liz",  "lastName":"Smith"},
+    {"firstName":"Ahmed","lastName":"Khan"}
+  ]
+}
+db.defaults(defaults)
+  .write();
+  
+app.get("/write", (req, res) => {
+  db.get('users')
+    .push({firstName: req.query.first, lastName: req.query.last})
+    .write();
+
+  res.redirect("/");
+});
+
+app.get("/read", (req, res) => {
+  res.send(db.get('users')
+             .value());
+});
+
+app.get("/clear", (req, res) => {
+  db.get('users')
+    .remove()
+    .write();
+  res.redirect("/");
+});
+
+// auto deploys from github
+app.post('/deploy', (req, res) => {
+  if (req.query.secret !== process.env.SECRET) {
+    res.status(401).send();
     return
   }
-  
-  if (request.body.ref !== 'refs/heads/glitch') {
-    response.status(200).send('Push was not to glitch branch, so did not deploy.')
+
+  if (req.body.ref !== 'refs/heads/glitch') {
+    res.status(200).send('Push was not to glitch branch, so did not deploy.');
     return
   }
-  
-  const repoUrl = request.body.repository.git_url
+
+  const repoUrl = req.body.repository.git_url;
 
   console.log('Fetching latest changes.')
   const output = execSync(
     `git checkout -- ./ && git pull -X theirs ${repoUrl} glitch && refresh`
-  ).toString()
-  console.log(output)
-  response.status(200).send()
-})
+  ).toString();
+  console.log(output);
+  res.status(200).send();
+});
 
-const listener = app.listen(process.env.PORT, function() {
+const listener = app.listen(process.env.PORT, () => {
   console.log('Your app is listening on port ' + listener.address().port);
-})
+});

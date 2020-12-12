@@ -1,25 +1,20 @@
 {
-  "name": "git-glitched",
+  "name": "scavenger-hunt",
   "version": "0.0.1",
-  "description": "Deploy to Glitch using git.",
+  "description": "A series of web puzzles.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.16.3"
+    "express": "^4.16.3",
+    "lowdb": "1.x"
   },
   "engines": {
     "node": "8.x"
   },
   "repository": {
-    "url": "https://github.com/noise-machines/git-glitched"
+    "url": "https://github.com/wong-justin/scavenger-hunt"
   },
   "license": "MIT",
-  "keywords": [
-    "node",
-    "glitch",
-    "express",
-    "git"
-  ]
 }
